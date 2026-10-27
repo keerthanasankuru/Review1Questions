@@ -6,89 +6,60 @@ team_statistics = {}
 pair_count = {}
 
 
-def get_integer(message, minimum=None, maximum=None):
+def team():
     while True:
         try:
-            value = int(input(message))
+            n = int(input("Enter number of teams: "))
 
-            if minimum is not None and value < minimum:
-                print("Value must be at least", minimum)
+            if n < 2:
+                print("Enter at least 2 teams")
                 continue
 
-            if maximum is not None and value > maximum:
-                print("Value must not exceed", maximum)
-                continue
-
-            return value
+            break
 
         except ValueError:
-            print("Enter a valid integer")
+            print("Enter a valid number")
 
+    for i in range(n):
+        while True:
+            name = input("Enter team name: ").strip()
 
-def team():
-    n = get_integer("Enter number of teams: ", 2)
+            if name == "":
+                print("Team name cannot be empty")
+                continue
 
-    i = 0
-    while i < n:
-        name = input("Enter team name: ").strip()
+            if name.lower() in [t.lower() for t in teams]:
+                print("Team already exists")
+                continue
 
-        if name == "":
-            print("Team name cannot be empty")
-        elif name in teams:
-            print("Team name already exists")
-        else:
             teams.append(name)
-            i += 1
+            break
 
-
-team()
+    return teams
 
 
 def team_validation(teams):
-    valid_teams = []
-
-    for name in teams:
-        if name.strip() != "" and name not in valid_teams:
-            valid_teams.append(name)
-
-    count = 0
-    for name in valid_teams:
-        count += 1
-
-    if count < 2:
-        raise ValueError("At least 2 teams must be present")
+    for t in teams:
+        if t not in valid_teams:
+            valid_teams.append(t)
 
     return valid_teams
-
-
-valid_teams = team_validation(teams)
 
 
 def team_assigning(valid_teams):
     matches = []
 
-    i = 0
-    while i < len(valid_teams):
-        j = i + 1
-
-        while j < len(valid_teams):
+    for i in range(len(valid_teams)):
+        for j in range(i + 1, len(valid_teams)):
             matches.append([valid_teams[i], valid_teams[j]])
             matches.append([valid_teams[j], valid_teams[i]])
-            j += 1
-
-        i += 1
 
     return matches
 
 
+teams = team()
+valid_teams = team_validation(teams)
 matches = team_assigning(valid_teams)
-
-print("\nRequired match pairings:")
-
-i = 0
-for match in matches:
-    i += 1
-    print(i, match[0], "vs", match[1])
 
 
 def initialize_statistics(teams):
@@ -112,225 +83,197 @@ initialize_statistics(valid_teams)
 
 def match_validation(m, valid_teams):
     if m["team1"] not in valid_teams:
-        raise ValueError("Invalid first team")
+        raise ValueError("Team 1 does not exist")
 
     if m["team2"] not in valid_teams:
-        raise ValueError("Invalid second team")
+        raise ValueError("Team 2 does not exist")
 
     if m["team1"] == m["team2"]:
-        raise ValueError("A team cannot play against itself")
+        raise ValueError("Both teams cannot be the same")
 
-    if m["team1"] < m["team2"]:
-        pair = m["team1"] + "|" + m["team2"]
-    else:
-        pair = m["team2"] + "|" + m["team1"]
-
-    if pair in pair_count and pair_count[pair] >= 2:
-        raise ValueError("These teams have already played twice")
-
-    for i in [1, 2]:
-        if m["runs" + str(i)] < 0:
+    for key in ["runs1", "runs2"]:
+        if m[key] < 0:
             raise ValueError("Runs cannot be negative")
 
-        if not 0 <= m["wickets" + str(i)] <= 10:
+    for key in ["wickets1", "wickets2"]:
+        if m[key] < 0 or m[key] > 10:
             raise ValueError("Wickets must be between 0 and 10")
 
-        if not 0 <= m["overs" + str(i)] <= 20:
+    for key in ["overs1", "overs2"]:
+        if m[key] < 0 or m[key] > 20:
             raise ValueError("Overs must be between 0 and 20")
 
-        if not 0 <= m["balls" + str(i)] <= 5:
-            raise ValueError("Remaining balls must be between 0 and 5")
+    for key in ["balls1", "balls2"]:
+        if m[key] < 0 or m[key] > 5:
+            raise ValueError("Balls must be between 0 and 5")
 
-        if m["overs" + str(i)] == 20 and m["balls" + str(i)] != 0:
-            raise ValueError("No extra balls allowed after 20 overs")
+    if m["overs1"] == 20 and m["balls1"] != 0:
+        raise ValueError("Balls must be 0 after 20 overs")
 
-    return pair
+    if m["overs2"] == 20 and m["balls2"] != 0:
+        raise ValueError("Balls must be 0 after 20 overs")
 
 
-def match_details(match_id):
-    while True:
-        try:
-            print("\nEnter details for Match", match_id)
+def match_details():
+    for i in range(len(matches)):
+        m = {}
+        m["id"] = i + 1
+        m["team1"] = input("Enter Team 1: ")
+        m["team2"] = input("Enter Team 2: ")
+        m["runs1"] = int(input("Enter Team 1 runs: "))
+        m["wickets1"] = int(input("Enter Team 1 wickets: "))
+        m["overs1"] = int(input("Enter Team 1 overs: "))
+        m["balls1"] = int(input("Enter Team 1 balls: "))
+        m["runs2"] = int(input("Enter Team 2 runs: "))
+        m["wickets2"] = int(input("Enter Team 2 wickets: "))
+        m["overs2"] = int(input("Enter Team 2 overs: "))
+        m["balls2"] = int(input("Enter Team 2 balls: "))
 
-            team1 = input("Enter first team: ").strip()
-            team2 = input("Enter second team: ").strip()
+        match_validation(m, valid_teams)
+        matches_data.append(m)
 
-            m = {
-                "id": match_id,
-                "team1": team1,
-                "team2": team2
-            }
+        if m["team1"] < m["team2"]:
+            pair = m["team1"] + "|" + m["team2"]
+        else:
+            pair = m["team2"] + "|" + m["team1"]
 
-            for i in [1, 2]:
-                m["runs" + str(i)] = get_integer(
-                    "Enter Team " + str(i) + " runs: ", 0
-                )
-
-                m["wickets" + str(i)] = get_integer(
-                    "Enter Team " + str(i) + " wickets: ", 0, 10
-                )
-
-                m["overs" + str(i)] = get_integer(
-                    "Enter Team " + str(i) + " completed overs: ", 0, 20
-                )
-
-                m["balls" + str(i)] = get_integer(
-                    "Enter Team " + str(i) + " remaining balls: ", 0, 5
-                )
-
-            pair = match_validation(m, valid_teams)
-
-            matches_data.append(m)
-
-            if pair in pair_count:
-                pair_count[pair] += 1
-            else:
-                pair_count[pair] = 1
-
-            return m
-
-        except ValueError as e:
-            print("Invalid match:", e)
-            print("Please enter the match details again.")
+        pair_count[pair] = pair_count.get(pair, 0) + 1
 
 
 def match_analysis(m):
-    t1 = m["team1"]
-    t2 = m["team2"]
+    team1 = m["team1"]
+    team2 = m["team2"]
 
-    s1 = team_statistics[t1]
-    s2 = team_statistics[t2]
+    runs1 = m["runs1"]
+    runs2 = m["runs2"]
 
-    s1["played"] += 1
-    s2["played"] += 1
-
-    s1["runs_scored"] += m["runs1"]
-    s1["runs_conceded"] += m["runs2"]
-
-    s2["runs_scored"] += m["runs2"]
-    s2["runs_conceded"] += m["runs1"]
+    wickets1 = m["wickets1"]
+    wickets2 = m["wickets2"]
 
     balls1 = m["overs1"] * 6 + m["balls1"]
     balls2 = m["overs2"] * 6 + m["balls2"]
 
-    if m["wickets1"] == 10:
+    if wickets1 == 10:
         balls1 = 120
 
-    if m["wickets2"] == 10:
+    if wickets2 == 10:
         balls2 = 120
 
-    s1["balls_faced"] += balls1
-    s1["balls_bowled"] += balls2
+    team_statistics[team1]["played"] += 1
+    team_statistics[team2]["played"] += 1
 
-    s2["balls_faced"] += balls2
-    s2["balls_bowled"] += balls1
+    team_statistics[team1]["runs_scored"] += runs1
+    team_statistics[team1]["runs_conceded"] += runs2
 
-    if m["runs1"] > m["runs2"]:
-        s1["wins"] += 1
-        s1["points"] += 2
-        s2["lost"] += 1
+    team_statistics[team2]["runs_scored"] += runs2
+    team_statistics[team2]["runs_conceded"] += runs1
 
-    elif m["runs1"] < m["runs2"]:
-        s2["wins"] += 1
-        s2["points"] += 2
-        s1["lost"] += 1
+    team_statistics[team1]["balls_faced"] += balls1
+    team_statistics[team1]["balls_bowled"] += balls2
+
+    team_statistics[team2]["balls_faced"] += balls2
+    team_statistics[team2]["balls_bowled"] += balls1
+
+    if runs1 > runs2:
+        team_statistics[team1]["wins"] += 1
+        team_statistics[team1]["points"] += 2
+        team_statistics[team2]["lost"] += 1
+
+    elif runs2 > runs1:
+        team_statistics[team2]["wins"] += 1
+        team_statistics[team2]["points"] += 2
+        team_statistics[team1]["lost"] += 1
 
     else:
-        s1["tied"] += 1
-        s2["tied"] += 1
-        s1["points"] += 1
-        s2["points"] += 1
+        team_statistics[team1]["tied"] += 1
+        team_statistics[team2]["tied"] += 1
+        team_statistics[team1]["points"] += 1
+        team_statistics[team2]["points"] += 1
 
 
-match_id = 1
+match_details()
 
-for match in matches:
-    m = match_details(match_id)
+for m in matches_data:
     match_analysis(m)
-    match_id += 1
 
 
 def calculate_nrr():
-    for t in valid_teams:
-        stats = team_statistics[t]
+    for team in valid_teams:
+        stats = team_statistics[team]
 
         if stats["balls_faced"] > 0 and stats["balls_bowled"] > 0:
             run_rate_scored = (
                 stats["runs_scored"] * 6 / stats["balls_faced"]
             )
-
             run_rate_conceded = (
                 stats["runs_conceded"] * 6 / stats["balls_bowled"]
             )
-
-            stats["NRR"] = run_rate_scored - run_rate_conceded
-
-
-calculate_nrr()
+            stats["NRR"] = round(
+                run_rate_scored - run_rate_conceded, 3
+            )
+        else:
+            stats["NRR"] = 0.0
 
 
 def display_points_table():
-    standings = []
+    sorted_teams = valid_teams.copy()
 
-    for t in valid_teams:
-        standings.append(t)
+    for i in range(len(sorted_teams)):
+        for j in range(len(sorted_teams) - i - 1):
+            team1 = sorted_teams[j]
+            team2 = sorted_teams[j + 1]
 
-    i = 0
-    while i < len(standings):
-        j = i + 1
+            stats1 = team_statistics[team1]
+            stats2 = team_statistics[team2]
 
-        while j < len(standings):
-            t1 = standings[i]
-            t2 = standings[j]
+            if (stats1["points"] < stats2["points"] or (stats1["points"] == stats2["points"]and stats1["NRR"] < stats2["NRR"])):
+                sorted_teams[j], sorted_teams[j + 1] = (sorted_teams[j + 1],sorted_teams[j])
 
-            s1 = team_statistics[t1]
-            s2 = team_statistics[t2]
-
-            if (
-                s2["points"] > s1["points"]
-                or (
-                    s2["points"] == s1["points"]
-                    and s2["NRR"] > s1["NRR"]
-                )
-            ):
-                standings[i], standings[j] = standings[j], standings[i]
-
-            j += 1
-
-        i += 1
-
-    print("\nFINAL TOURNAMENT POINTS TABLE")
+    print("\nPOINTS TABLE")
 
     print(
-        f"{'Pos':<5}{'Team':<18}{'Played':<9}{'Won':<7}"
-        f"{'Lost':<7}{'Tied':<7}{'Points':<9}"
-        f"{'Scored':<10}{'Given':<10}{'Overs Faced':<14}"
-        f"{'Overs Bowled':<15}{'NRR':<8}"
+        f"{'Team':<15}{'P':<5}{'W':<5}{'L':<5}"
+        f"{'T':<5}{'Points':<8}{'Runs Scored':<13}"
+        f"{'Runs Conceded':<15}{'Overs Faced':<13}"
+        f"{'Overs Bowled':<13}{'NRR':<8}"
     )
 
-    position = 1
+    for team in sorted_teams:
+        stats = team_statistics[team]
 
-    for t in standings:
-        s = team_statistics[t]
-
-        overs_faced = s["balls_faced"] / 6
-        overs_bowled = s["balls_bowled"] / 6
+        overs_faced = stats["balls_faced"] / 6
+        overs_bowled = stats["balls_bowled"] / 6
 
         print(
-            f"{position:<5}{t:<18}{s['played']:<9}"
-            f"{s['wins']:<7}{s['lost']:<7}{s['tied']:<7}"
-            f"{s['points']:<9}{s['runs_scored']:<10}"
-            f"{s['runs_conceded']:<10}"
-            f"{overs_faced:<14.2f}{overs_bowled:<15.2f}"
-            f"{s['NRR']:<8.3f}"
+            f"{team:<15}{stats['played']:<5}"
+            f"{stats['wins']:<5}{stats['lost']:<5}"
+            f"{stats['tied']:<5}{stats['points']:<8}"
+            f"{stats['runs_scored']:<13}"
+            f"{stats['runs_conceded']:<15}"
+            f"{overs_faced:<13.1f}{overs_bowled:<13.1f}"
+            f"{stats['NRR']:<8.3f}"
         )
 
-        position += 1
+
+def check_tournament_complete():
+    for i in range(len(valid_teams)):
+        for j in range(i + 1, len(valid_teams)):
+            team1 = valid_teams[i]
+            team2 = valid_teams[j]
+
+            if team1 < team2:
+                pair = team1 + "|" + team2
+            else:
+                pair = team2 + "|" + team1
+
+            if pair_count.get(pair, 0) != 2:
+                return False
+
+    return True
 
 
-expected_matches = len(valid_teams) * (len(valid_teams) - 1)
-
-if len(matches_data) == expected_matches:
+if check_tournament_complete():
+    calculate_nrr()
     display_points_table()
 else:
-    print("Tournament is incomplete.")
+    print("Tournament is incomplete")
